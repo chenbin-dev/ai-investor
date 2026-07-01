@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@openai/agents": "^0.12.0",
+    "edgeone": "^1.6.10",
     "marked": "^18.0.5",
     "openai": "^4.86.0",
     "react": "^18.3.1",
