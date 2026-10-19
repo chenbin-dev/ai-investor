@@ -31,6 +31,8 @@
 │   ├── stop.ts            # 中止端点 (POST /stop)
 │   ├── _model.ts          # LLM 模型配置
 │   └── _shared.ts         # SSE 流式响应工具
+├── server/
+│   └── local.ts           # 本地运行适配层（补齐平台注入的 tools / store / utils）
 ├── src/                   # 前端 React 应用
 │   ├── App.tsx
 │   ├── lib/api.ts         # API 调用 + SSE 解析
@@ -45,6 +47,8 @@
 
 ## 本地开发
 
+### 方式一：EdgeOne 平台托管开发
+
 ```bash
 # 安装依赖
 npm install
@@ -57,16 +61,41 @@ edgeone makers env pull
 edgeone makers dev
 ```
 
+### 方式二：完全本地运行（不依赖 EdgeOne 平台）
+
+`edgeone makers dev` 需要登录并关联平台项目。如果想脱离平台在本地跑，用内置的本地适配层：
+
+```bash
+npm install
+
+# 1. 填好 .env 里的模型密钥（任意 OpenAI 兼容服务都可以）
+# 2. 启动后端，监听 8088（与 vite.config.ts 的代理目标一致）
+npm run dev:server
+
+# 3. 另开一个终端启动前端
+npm run dev
+```
+
+打开 <http://localhost:5173> 即可。`server/local.ts` 补齐了平台原本注入的三样东西：
+
+| 平台注入 | 本地实现 |
+|---|---|
+| `context.tools` | `web_search` 工具，直连腾讯云联网搜索 API |
+| `context.store` | 进程内内存会话历史，重启清空 |
+| `context.utils` | 按 `conversation_id` 中止正在进行的流式回复 |
+
+后端代码改动后需要重启 `npm run dev:server`（脚本是一次性打包，没有热重载）。
+
 ## 环境变量
 
 参考 `.env.example`：
 
 | 变量 | 说明 |
 |------|------|
-| `AI_GATEWAY_API_KEY` | AI Gateway 密钥（部署时自动配置） |
-| `AI_GATEWAY_BASE_URL` | AI Gateway 地址（部署时自动配置） |
-| `AI_GATEWAY_MODEL` | 模型名称（可选，默认 deepseek-v4-flash） |
-| `WSA_API_KEY` | 联网搜索 API 密钥（使用 web_search 工具时需要） |
+| `AI_GATEWAY_API_KEY` | 模型服务的 API Key（部署时由平台自动注入；本地运行需手填） |
+| `AI_GATEWAY_BASE_URL` | 模型服务地址（部署时由平台自动注入；本地运行需手填） |
+| `AI_GATEWAY_MODEL` | 模型名称，平台侧取值 `@makers/deepseek-v4-flash`；不填则用代码里的默认值，**不要填空字符串** |
+| `WSA_API_KEY` | 腾讯云联网搜索（元宝搜索）服务 API KEY，使用 `web_search` 工具时需要 |
 
 ## 部署
 
